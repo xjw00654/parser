@@ -2,6 +2,7 @@
 # author: jwxie - xiejiawei000@gmail.com
 import multiprocessing as mp
 import os
+import shutil
 import socket
 import time
 
@@ -176,43 +177,54 @@ def filter_wl(
             break
 
         print('GET: ', _f)
-        # pcap = pcap_parser_generator(_f)
-        # fw = open(_f.replace('.pcap', 'wl.pcap'), 'wb')
-        # writer = dpkt.pcap.Writer(fw)
-        #
-        # num_writes = 0
-        # for ts, (eth, _, _, dns) in pcap:
-        #     if dns.qr != dpkt.dns.DNS_R:  # 请求不要，只拿响应数据
-        #         continue
-        #     if len(dns.an) < 1:  # 回答数据不足的，也直接不管了
-        #         continue
-        #
-        #     in_wl_nums = 0
-        #     for qd in dns.qd:
-        #         dn = qd.name
-        #         dn_spl = dn.split('.')
-        #         dn_sld = ""
-        #         if len(dn_spl) < 2:
-        #             continue
-        #         if dn_spl[-2] == 'com':
-        #             if len(dn_spl) == 2:
-        #                 continue
-        #             dn_sld = dn_spl[-3]
-        #         else:
-        #             dn_sld = dn_spl[-2]
-        #         if pydb_wl(domain_name=dn_sld):
-        #             in_wl_nums += 1
-        #
-        #     # ttl_ok_nums = 0  # 似乎不顶啥用
-        #     # for an in dns.an:
-        #     #     if an.ttl > 1800:
-        #     #         ttl_ok_nums += 1
-        #
-        #     if len(dns.qd) != in_wl_nums:  # 请求的都是白名单里的数据
-        #         writer.writepkt(eth, ts=ts)
-        #         num_writes += 1
-        # print(f'{_f}一共剩下{num_writes}个数据包')
-        import shutil
+        pcap = pcap_parser_generator(_f)
+        fw = open(_f.replace('.pcap', 'wl.pcap'), 'wb')
+        writer = dpkt.pcap.Writer(fw)
+
+        num_writes = 0
+        for ts, (eth, _, _, dns) in pcap:
+            if dns.qr != dpkt.dns.DNS_R:  # 请求不要，只拿响应数据
+                continue
+            if len(dns.an) < 1:  # 回答数据不足的，也直接不管了
+                continue
+
+            in_wl_nums = 0
+            for qd in dns.qd:
+                dn = qd.name
+                dn_spl = dn.split('.')
+                dn_sld = ""
+                if len(dn_spl) < 2:
+                    continue
+                if dn_spl[-2] == 'com':
+                    if len(dn_spl) == 2:
+                        continue
+                    dn_sld = dn_spl[-3]
+                else:
+                    dn_sld = dn_spl[-2]
+                if pydb_wl(domain_name=dn_sld):
+                    in_wl_nums += 1
+
+            ttl_ok_nums = 0  # 似乎不顶啥用
+            for an in dns.an:
+                if an.ttl > 1800:
+                    ttl_ok_nums += 1
+
+            cdn_ip_ok_nums = 0
+            for an in dns.an:
+                if hasattr(an, 'ip'):
+                    real_ip = socket.inet_ntoa(an.ip)
+                    if pydb_ip(cdnIP=real_ip):
+                        cdn_ip_ok_nums += 1
+
+            # 有不在白名单的an；有不在白名单的ip；有小于1800的ttl记录（不管A还是CNAME还是其他）
+            if len(dns.qd) != in_wl_nums and \
+                    len(dns.an) != ttl_ok_nums and \
+                    len(dns.an) != cdn_ip_ok_nums:
+                writer.writepkt(eth, ts=ts)
+                num_writes += 1
+
+        print(f'{_f}一共剩下{num_writes}个数据包')
+
         shutil.move(_f, _f.replace('.pcap', 'wl.pcap'))
         # os.remove(_f)
 
