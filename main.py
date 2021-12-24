@@ -106,7 +106,7 @@ def sent_data(
     processed = []
     do_continue_times = 0
     while True:
-        files = os.listdir(path)
+        files = [e for e in os.listdir(path) if 'wl' not in e]
         if len(set(files) - set(processed)) < num_processes + 1:
             time.sleep(10)
             do_continue_times += 1
@@ -150,12 +150,16 @@ def sent_data(
 
 
 def filter_wl(
-        q: mp.Queue
+        q: mp.Queue,
+        pydb_wl: pydblite.Base,
+        pydb_ip: pydblite.Base
 ):
     """
     从队列q里面取数据，取数据做处理并保存
 
     :param q: 数据队列
+    :param pydb_wl: 白名单数据库对象
+    :param pydb_ip: cdn ip白名单对象
     :return: None
     """
     while True:
