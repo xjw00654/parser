@@ -106,7 +106,7 @@ def sent_data(
     processed = []
     do_continue_times = 0
     while True:
-        files = [e for e in os.listdir(path) if 'wl' not in e]
+        files = [e for e in os.listdir(path) if 'wl' not in e]  # 带wl的是有处理完成的
         if len(set(files) - set(processed)) < num_processes + 1:
             time.sleep(10)
             do_continue_times += 1
@@ -117,7 +117,7 @@ def sent_data(
             do_continue_times = 0
             ll = list(set(files) - set(processed))
             lld = {
-                e: time2strap(e) for e in ll
+                e: time2strap(e.replace('.pcap', '')) for e in ll
             }
             lld_r = {
                 v: k for k, v in lld.items()
@@ -212,11 +212,13 @@ def filter_wl(
         #         writer.writepkt(eth, ts=ts)
         #         num_writes += 1
         # print(f'{_f}一共剩下{num_writes}个数据包')
+        import shutil
+        shutil.move(_f, _f.replace('.pcap', 'wl.pcap'))
         # os.remove(_f)
 
 
 if __name__ == '__main__':
-    pcap_path = ''
+    pcap_path = 'c:\\Users\\JiaweiXie\\Desktop\\dns_pcap'
     pydb_ip = get_cdn_ip()
     pydb_wl = get_wl_db()
     q = mp.Queue()
