@@ -28,7 +28,7 @@ def file_checker(
     :param wait: 支持当前未找到名字时，等待多久进行再次查询
     :return: 文件名完整路径生成器
     """
-    if not os.path.exists(file_name):
+    if not os.path.exists(os.path.join(path, file_name)):
         msg = f'文件错误，没有在{path}目录下找到{file_name}文件'
         logger.info(msg)
         raise Exception(msg)
