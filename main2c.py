@@ -111,7 +111,7 @@ def sent_data(
         if len(set(files) - set(processed)) < num_processes + 1:
             time.sleep(10)
             do_continue_times += 1
-            if do_continue_times >= 360:  # 超过3600秒没有新数据产生，直接break掉
+            if do_continue_times >= 36:  # 超过360秒没有新数据产生，直接break掉
                 break
             continue
         else:
@@ -227,18 +227,17 @@ def filter_wl(
                 num_writes += 1
 
         print(f'{_f}一共剩下{num_writes}个数据包')
+        # shutil.move(_f, _f.replace('.pcap', 'wl.pcap'))
+        os.remove(_f)
 
-        shutil.move(_f, _f.replace('.pcap', 'wl.pcap'))
-        # os.remove(_f)
 
-
-if __name__ == '__main__':
-    pcap_path = 'c:\\Users\\JiaweiXie\\Desktop\\dns_pcap'
+def start(pcap_path):
+    # pcap_path = 'c:\\Users\\JiaweiXie\\Desktop\\dns_pcap'
     pydb_ip = get_cdn_ip()
     pydb_wl = get_wl_db()
     q = mp.Queue()
 
-    n = 8
+    n = 12
     p_set = []
     for i in range(n):
         p = mp.Process(target=filter_wl, args=(q, pydb_wl, pydb_ip))
