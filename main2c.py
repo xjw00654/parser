@@ -2,7 +2,6 @@
 # author: jwxie - xiejiawei000@gmail.com
 import multiprocessing as mp
 import os
-import shutil
 import socket
 import time
 
@@ -241,11 +240,14 @@ def start(pcap_path):
     p_set = []
     for i in range(n):
         p = mp.Process(target=filter_wl, args=(q, pydb_wl, pydb_ip))
+        # TODO: 检查是否可以通过daemon来保证nohup时，子进程随着主进程退出
+        p.daemon = True
         p.start()
         p_set.append(p)
     s_p = mp.Process(target=sent_data, args=(pcap_path, q, n))
     s_p.start()
     for p in p_set:
         p.join()
-
+    # TODO: multiprocessing子进程无法接收到SIG是正确的，
+    #  参考https://segmentfault.com/a/1190000004172444，尝试使用concurrent.futures
     print('DONE')
