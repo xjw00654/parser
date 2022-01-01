@@ -19,7 +19,8 @@ def get_logger(with_file_log=True):
     if with_file_log:
         os.makedirs('logs', exist_ok=True)
         ct = time.localtime()
-        fh = logging.FileHandler(f'logs/{ct.tm_mon}-{ct.tm_mday}__{ct.tm_hour}_{ct.tm_min}_{ct.tm_sec}.log')
+        fh = logging.FileHandler(f'logs/{ct.tm_mon}-{ct.tm_mday}__{ct.tm_hour}_{ct.tm_min}_{ct.tm_sec}.log',
+                                 encoding='utf-8')
         fh.setLevel(logging.DEBUG)
         fh.setFormatter(formatter)
 
@@ -105,7 +106,7 @@ for cdn_provider_tag in cdn_companies:
     cdn_key = cdn_provider_main_page.find_all(attrs={'id': 'cdnkey'})[0].get('value')
     rep = get_cdn_ip(ck=parse.quote(cdn_key), page_index=1)
     provider_cdn_data = []
-    count = 10
+    count = 0
     if rep or rep.status_code != 200:
         _rep_json = rep.json()
         count = _rep_json.get('count', None)
@@ -117,20 +118,24 @@ for cdn_provider_tag in cdn_companies:
         else:
             raise ValueError('初始化请求失败，请进行一些检查')
     for i in range(2, count):
-        rep = get_cdn_ip(ck=parse.quote(cdn_key), page_index=i)
-        if rep:
-            _rep_json = rep.json()
-            provider_cdn_data += _rep_json.get('data', 'page_index: ' + str(i) + '= None')
-            LOGGER.info(f"请求成功，一共有{count}条数据，当前进度{len(provider_cdn_data)}/{count}, pages={i}/{count // 20}")
-        else:
+        try:
+            rep = get_cdn_ip(ck=parse.quote(cdn_key), page_index=i)
             if rep:
-                LOGGER.error(f'请求成功，但是发生了一些奇怪的错误，错误为：{rep.text}')
+                _rep_json = rep.json()
+                provider_cdn_data += _rep_json.get('data', 'page_index: ' + str(i) + '= None')
+                LOGGER.info(f"请求成功，一共有{count}条数据，当前进度{len(provider_cdn_data)}/{count}, pages={i}/{count // 20}")
             else:
-                LOGGER.error(f'请求失败，请进行一些检查，本次将跳过')
-        sleep_module()
+                if rep:
+                    LOGGER.error(f'请求成功，但是发生了一些奇怪的错误，错误为：{rep.text}')
+                else:
+                    LOGGER.error(f'请求失败，请进行一些检查，本次将跳过')
+            sleep_module()
 
-    os.makedirs(f'results', exist_ok=True)
-    with open(f'results/cdn_{cdn_provider_name}.json', 'w', encoding='utf-8') as fp:
-        json.dump(provider_cdn_data, fp, ensure_ascii=False)
+            if i % 200 == 0:
+                os.makedirs(f'results', exist_ok=True)
+                with open(f'results/cdn_{cdn_provider_name}.json', 'w', encoding='utf-8') as fp:
+                    json.dump(provider_cdn_data, fp, ensure_ascii=False)
+        except Exception as e:
+            LOGGER.warning(f'当前{i}遇到错误，将会跳过。')
     LOGGER.info(f'{cdn_provider_name}已经处理完成，休息一个大的。')
     time.sleep(60 + random.random() * 10)
