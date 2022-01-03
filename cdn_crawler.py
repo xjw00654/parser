@@ -117,7 +117,7 @@ for cdn_provider_tag in cdn_companies:
             LOGGER.error(f'请求成功，但是发生了一些奇怪的错误，错误为：{rep.text}')
         else:
             raise ValueError('初始化请求失败，请进行一些检查')
-    for i in range(2, count):
+    for i in range(2, count // 20):
         try:
             rep = get_cdn_ip(ck=parse.quote(cdn_key), page_index=i)
             if rep:
