@@ -122,7 +122,11 @@ for cdn_provider_tag in cdn_companies:
             rep = get_cdn_ip(ck=parse.quote(cdn_key), page_index=i)
             if rep:
                 _rep_json = rep.json()
-                provider_cdn_data += _rep_json.get('data', {'page_index' + str(i): 'None'})
+                if hasattr(_rep_json, 'data'):
+                    provider_cdn_data += _rep_json.get('data', {'page_index' + str(i): 'None'})
+                elif hasattr(_rep_json, 'status'):
+                    LOGGER.warning('请求成功但是被ban了...')
+
                 LOGGER.info(f"请求成功，一共有{count}条数据，当前进度{len(provider_cdn_data)}/{count}, pages={i}/{count // 20}")
             else:
                 if rep:
