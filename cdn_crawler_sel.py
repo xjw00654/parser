@@ -54,8 +54,8 @@ DEFAULT_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' \
              '(KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36 Edg/96.0.1054.62'
 BASE_URL = 'https://cdn.chinaz.com'
 DEFAULT_PROXY_PROFILE = {
-    'http': 'http://127.0.0.1:7890',
-    'https': 'http://127.0.0.1:7890',
+    # 'http': 'http://127.0.0.1:7890',
+    # 'https': 'http://127.0.0.1:7890',
 }
 
 driver.get(url=BASE_URL)
@@ -73,7 +73,9 @@ cdn_list_href = [e.find_element_by_tag_name('a').get_attribute('href') for e in 
 cdn_list_name = [e.find_element_by_tag_name('a').text for e in cdn_list]
 
 provider_cdn_data = {k: [] for k in cdn_list_name}
-for name, href in zip(cdn_list_name, cdn_list_href):
+for i, (name, href) in enumerate(zip(cdn_list_name, cdn_list_href)):
+    if i == 0:
+        continue
     driver.get(href)
 
     total_ip_counts = int([e for e in re.findall(r'\d*', driver.find_element('id', 'areaipcount').text) if e][0])
@@ -85,10 +87,14 @@ for name, href in zip(cdn_list_name, cdn_list_href):
         ips = [e.text for e in box_data.find_elements('tag name', 'li')]
         provider_cdn_data[name].extend(ips)
 
-        next_page_bottom = [e for e in driver.find_element(webdriver.common.by.By.ID, 'pagelist').find_elements(
-            webdriver.common.by.By.TAG_NAME, 'a') if e.text == '>'][0]
-        next_page_bottom.click()
-        sleep_module()
+        try:
+            next_page_bottom = [e for e in driver.find_element(webdriver.common.by.By.ID, 'pagelist').find_elements(
+                webdriver.common.by.By.TAG_NAME, 'a') if e.text == '>'][0]
+            next_page_bottom.click()
+            sleep_module()
+        except Exception as e:
+            LOGGER.warning(f'遇到错误{e}，跳过这个page...')
+            continue
         if page % 100 == 0:
             os.makedirs(f'results', exist_ok=True)
             with open(f'results/cdn_{name}.txt', 'w', encoding='utf-8') as fp:
