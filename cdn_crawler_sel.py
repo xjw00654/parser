@@ -59,9 +59,15 @@ DEFAULT_PROXY_PROFILE = {
 }
 
 driver.get(url=BASE_URL)
+len_cookies = len(driver.get_cookies())
 
-LOGGER.info('请手动登录!!!')
-time.sleep(20)
+LOGGER.info('请进行登录!!!')
+while True:
+    if len(driver.get_cookies()) == len_cookies:
+        time.sleep(0.5)
+    else:
+        LOGGER.info('检测到已登录，将会继续...')
+        break
 
 toplist = driver.find_element('class name', 'toplist-main')
 
@@ -81,7 +87,22 @@ for i, (name, href) in enumerate(zip(cdn_list_name, cdn_list_href)):
     total_ip_counts = int([e for e in re.findall(r'\d*', driver.find_element('id', 'areaipcount').text) if e][0])
     total_pages = int(total_ip_counts // 20)
     LOGGER.info(f'{name}一共有{total_pages}页数据，共计{total_ip_counts}条CDN ip数据')
-    for page in range(2, total_pages + 1):
+
+    if os.path.exists(f'results/cdn_{name}.txt'):
+        LOGGER.info(f'在results目录中找到cdn_{name}.txt文件，表示已经有过去的爬虫爬过部分记录')
+        have_done_records = len(
+            [e for e in open(f'results/cdn_{name}.txt', 'r', encoding='utf-8').readlines() if e != '\n'])
+        start_page = int(have_done_records // 20) + 1
+        LOGGER.info(f'当前已爬取记录为{have_done_records}，大约为{start_page - 1}页面，将会从{start_page}开始')
+
+        LOGGER.info(f'正在进行页面跳转...')
+        driver.find_element(webdriver.common.by.By.ID, 'pn').send_keys(start_page)
+        driver.find_element(webdriver.common.by.By.ID, 'pageok').click()
+        LOGGER.info(f'跳转完成')
+    else:
+        start_page = 2
+
+    for page in range(start_page, total_pages + 1):
         LOGGER.info(f'正在处理{name}的第{page}/{total_pages}页...')
         box_data = driver.find_element('class name', 'box')
         ips = [e.text for e in box_data.find_elements('tag name', 'li')]
@@ -94,6 +115,7 @@ for i, (name, href) in enumerate(zip(cdn_list_name, cdn_list_href)):
             sleep_module()
         except Exception as e:
             LOGGER.warning(f'遇到错误{e}，跳过这个page...')
+            sleep_module()
             continue
         if page % 100 == 0:
             os.makedirs(f'results', exist_ok=True)
