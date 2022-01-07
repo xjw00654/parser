@@ -110,7 +110,7 @@ def sent_data(
         if len(set(files) - set(processed)) < num_processes + 1:
             time.sleep(10)
             do_continue_times += 1
-            if do_continue_times >= 36:  # 超过360秒没有新数据产生，直接break掉
+            if do_continue_times >= 360:  # 超过3600秒没有新数据产生，直接break掉
                 break
             continue
         else:
@@ -182,11 +182,6 @@ def filter_wl(
 
         num_writes = 0
         for ts, (eth, _, _, dns) in pcap:
-            if dns.qr != dpkt.dns.DNS_R:  # 请求不要，只拿响应数据
-                continue
-            if len(dns.an) < 1:  # 回答数据不足的，也直接不管了
-                continue
-
             in_wl_nums = 0
             for qd in dns.qd:
                 dn = qd.name
@@ -218,20 +213,22 @@ def filter_wl(
                     if pydb_ip(cdnIP=real_ip):
                         cdn_ip_ok_nums += 1
 
-            # 有不在白名单的an；有不在白名单的ip；有小于1800的ttl记录（不管A还是CNAME还是其他）
-            if len(dns.qd) != in_wl_nums and \
-                    len(dns.an) != ttl_ok_nums and \
-                    len(dns.an) != cdn_ip_ok_nums:
+            # 有不在白名单的qd；
+            # 是响应包：
+            # 1、有不在白名单的ip；
+            # 2、有小于1800的ttl记录（不管A还是CNAME还是其他）
+            if len(dns.qd) != in_wl_nums or (
+                    dns.qr == dpkt.dns.DNS_R and
+                    (len(dns.an) != ttl_ok_nums or len(dns.an) != cdn_ip_ok_nums)
+            ):
                 writer.writepkt(eth, ts=ts)
                 num_writes += 1
 
-        print(f'{_f}一共剩下{num_writes}个数据包')
-        # shutil.move(_f, _f.replace('.pcap', 'wl.pcap'))
+        print(f'{_f}一共剩下{num_writes}个数据包，将会删除原始包')
         os.remove(_f)
 
 
 def start(pcap_path):
-    # pcap_path = 'c:\\Users\\JiaweiXie\\Desktop\\dns_pcap'
     pydb_ip = get_cdn_ip()
     pydb_wl = get_wl_db()
     q = mp.Queue()

@@ -74,8 +74,10 @@ get_cdn_ip = lambda ck, page_index: requests.get(
     headers={
         'user_agent': DEFAULT_UA,
         'refer': 'https://cdn.chinaz.com/server/%E7%99%BE%E5%BA%A6%E4%BA%91%E5%8A%A0%E9%80%9F',
-        'cookie': 'ucvalidate=38e8a8ad-b0e4-eebb-69e7-2080b0c859cd, '
-                  'chinaz_topuser=de1a1dec-f728-2a7e-f7b4-ca4c1a6fdb89',
+        'cookie': 'UM_distinctid=17e2887e4f554c-06415653dc3093-4303066-146d15-17e2887e4f6523; '
+                  'CNZZDATA5933533=cnzz_eid%3D1137688744-1641357237-%26ntime%3D1641357237; '
+                  'ucvalidate=99dd887c-d381-68c6-130b-cb8598f3767e; '
+                  'chinaz_topuser=5d857f1f-fda3-77ac-f37c-ea813bcaf42a',
         'accept': 'application/json, text/javascript, */*; q=0.01',
         'accept-encoding': 'gzip, deflate, br',
         'accept-language': 'zh-CN,zh;q=0.9'

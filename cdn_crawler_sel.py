@@ -38,12 +38,12 @@ def get_logger(with_file_log=True):
 def sleep_module():
     p = logging.getLogger('CDN_CRAWLER')
 
-    delay = random.randint(1, 2) + random.random()
+    delay = random.randint(0, 1) + random.random()
     p.info(f'休息{delay}秒.')
     time.sleep(delay)
     # if random.random() < 0.2:
     #     delay2 = random.random() * 3
-    #     p.info(f'命中红心！喝口水，多休息休息一下~，大约{delay2}秒')
+    #     p.info(f'命中红心！喝口水，多休  息休息一下~，大约{delay2}秒')
     #     time.sleep(delay2)
 
     p.info('休息结束，开始工作！')
@@ -104,11 +104,11 @@ for i, (name, href) in enumerate(zip(cdn_list_name, cdn_list_href)):
 
     for page in range(start_page, total_pages + 1):
         LOGGER.info(f'正在处理{name}的第{page}/{total_pages}页...')
-        box_data = driver.find_element('class name', 'box')
-        ips = [e.text for e in box_data.find_elements('tag name', 'li')]
-        provider_cdn_data[name].extend(ips)
-
         try:
+            box_data = driver.find_element('class name', 'box')
+            ips = [e.text for e in box_data.find_elements('tag name', 'li')]
+            provider_cdn_data[name].extend(ips)
+
             next_page_bottom = [e for e in driver.find_element(webdriver.common.by.By.ID, 'pagelist').find_elements(
                 webdriver.common.by.By.TAG_NAME, 'a') if e.text == '>'][0]
             next_page_bottom.click()
@@ -119,7 +119,7 @@ for i, (name, href) in enumerate(zip(cdn_list_name, cdn_list_href)):
             continue
         if page % 100 == 0:
             os.makedirs(f'results', exist_ok=True)
-            with open(f'results/cdn_{name}.txt', 'a+', encoding='utf-8') as fp:
+            with open(f'results/cdn_{name}.txt', 'w', encoding='utf-8') as fp:
                 for line in provider_cdn_data[name]:
                     fp.write(line.replace('\n', '\t') + '\n')
     LOGGER.info(f'{name}供应商爬取结束，共计{len(provider_cdn_data[name])}条数据.')
