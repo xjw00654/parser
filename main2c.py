@@ -217,9 +217,10 @@ def filter_wl(
             # 是响应包：
             # 1、有不在白名单的ip；
             # 2、有小于1800的ttl记录（不管A还是CNAME还是其他）
-            if len(dns.qd) != in_wl_nums or (
-                    dns.qr == dpkt.dns.DNS_R and
-                    (len(dns.an) != ttl_ok_nums or len(dns.an) != cdn_ip_ok_nums)
+            if not (
+                    len(dns.qd) == in_wl_nums
+                    or (not (
+                    dns.qr == dpkt.dns.DNS_R and (len(dns.an) != ttl_ok_nums or len(dns.an) != cdn_ip_ok_nums)))
             ):
                 writer.writepkt(eth, ts=ts)
                 num_writes += 1
