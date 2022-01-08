@@ -182,6 +182,11 @@ def filter_wl(
 
         num_writes = 0
         for ts, (eth, _, _, dns) in pcap:
+            # if dns.qr != dpkt.dns.DNS_R:  # 请求不要，只拿响应数据
+            #     continue
+            # if len(dns.an) < 1:  # 回答数据不足的，也直接不管了
+            #     continue
+
             in_wl_nums = 0
             for qd in dns.qd:
                 dn = qd.name
@@ -217,13 +222,16 @@ def filter_wl(
             # 是响应包：
             # 1、有不在白名单的ip；
             # 2、有小于1800的ttl记录（不管A还是CNAME还是其他）
-            if not (
-                    len(dns.qd) == in_wl_nums
-                    or (not (
-                    dns.qr == dpkt.dns.DNS_R and (len(dns.an) != ttl_ok_nums or len(dns.an) != cdn_ip_ok_nums)))
-            ):
-                writer.writepkt(eth, ts=ts)
-                num_writes += 1
+            if len(dns.qd) == in_wl_nums:  # 在白名单里
+                continue
+            else:  # 不在白名单里
+                if dns.qr == dpkt.dns.DNS_R:  # 保证是响应，因为请求没有TTL和IP
+                    if len(dns.an) != ttl_ok_nums or len(dns.an) != cdn_ip_ok_nums:  # 有异常TTL的记录 or 有非CDN记录
+                        writer.writepkt(eth, ts=ts)
+                        num_writes += 1
+                else:
+                    writer.writepkt(eth, ts=ts)
+                    num_writes += 1
 
         print(f'{_f}一共剩下{num_writes}个数据包，将会删除原始包')
         os.remove(_f)

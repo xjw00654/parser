@@ -107,7 +107,7 @@ def sent_data(
     do_continue_times = 0
     while True:
         files = [e for e in os.listdir(path) if 'wl' not in e and e.endswith('.pcap')]  # 带wl的是有处理完成的
-        if len(set(files) - set(processed)) < num_processes + 1:
+        if len(set(files) - set(processed)) < 5:
             time.sleep(10)
             do_continue_times += 1
             if do_continue_times >= 360:  # 超过3600秒没有新数据产生，直接break掉
@@ -222,13 +222,16 @@ def filter_wl(
             # 是响应包：
             # 1、有不在白名单的ip；
             # 2、有小于1800的ttl记录（不管A还是CNAME还是其他）
-            if not (
-                    len(dns.qd) == in_wl_nums
-                    or (not (
-                    dns.qr == dpkt.dns.DNS_R and (len(dns.an) != ttl_ok_nums or len(dns.an) != cdn_ip_ok_nums)))
-            ):
-                writer.writepkt(eth, ts=ts)
-                num_writes += 1
+            if len(dns.qd) == in_wl_nums:  # 在白名单里
+                continue
+            else:  # 不在白名单里
+                if dns.qr == dpkt.dns.DNS_R:  # 保证是响应，因为请求没有TTL和IP
+                    if len(dns.an) != ttl_ok_nums or len(dns.an) != cdn_ip_ok_nums:  # 有异常TTL的记录 or 有非CDN记录
+                        writer.writepkt(eth, ts=ts)
+                        num_writes += 1
+                else:
+                    writer.writepkt(eth, ts=ts)
+                    num_writes += 1
 
         print(f'{_f}一共剩下{num_writes}个数据包，将会删除原始包')
         os.remove(_f)
@@ -239,7 +242,7 @@ if __name__ == '__main__':
     pydb_ip = get_cdn_ip()
     pydb_wl = get_wl_db()
     q = mp.Queue()
-    q.put('c:\\Users\\JiaweiXie\\Desktop\\dns_pcap\\all_fix.pcap')
+    q.put('c:\\Users\\JiaweiXie\\Desktop\\dns_pcap\\2022_0107_1833_37wl.pcap')
 
     # n = 8
     # p_set = []
