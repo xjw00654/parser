@@ -4,6 +4,7 @@ import multiprocessing as mp
 import os
 import socket
 import time
+from collections import defaultdict
 
 import dpkt
 import numpy as np
@@ -11,6 +12,12 @@ import pydblite
 
 from file_checker import file_checker
 from pcap_parser import pcap_parser_generator
+
+_sn = defaultdict(None)
+_sn = {
+    'com': True, 'edu': True, 'org': True, 'gov': True, 'net': True, 'wrok': True, 'vip': True,
+    'club': True, 'site': True, 'vip': True, 'top': True
+}
 
 
 def pcap2csv(
@@ -194,7 +201,7 @@ def filter_wl(
                 dn_sld = ""
                 if len(dn_spl) < 2:
                     continue
-                if dn_spl[-2] == 'com':
+                if _sn[dn_spl[-2]]:
                     if len(dn_spl) == 2:
                         continue
                     dn_sld = dn_spl[-3]
